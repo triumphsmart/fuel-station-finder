@@ -5,6 +5,7 @@ const cors = require("cors");
 const pool = require("./config/database");
 
 const authRoutes = require("./routes/authRoutes");
+const stationRoutes = require("./routes/stationRoutes");
 
 const authenticate = require("./middleware/auth");
 const hasRole = require("./middleware/roles");
@@ -32,6 +33,7 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/stations", stationRoutes);
 
 app.get("/api/protected", authenticate, (req, res) => {
   res.json({
