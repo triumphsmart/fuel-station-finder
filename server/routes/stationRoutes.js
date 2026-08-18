@@ -8,7 +8,12 @@ const {
   createStationHandler,
   getMyStations,
   getStationById,
+  getAllStations,
+  getPublicStationById,
 } = require("../controllers/stationController");
+
+router.get("/", getAllStations); // Public route to get all approved stations
+router.get("/:id", getPublicStationById); // Public route to get a single approved station by ID
 
 router.use(authenticate);
 

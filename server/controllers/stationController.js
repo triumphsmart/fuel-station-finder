@@ -2,6 +2,9 @@ const {
   createStation,
   findStationsByOwner,
   findStationById,
+  getApprovedStations,
+  getApprovedStationById,
+  getFilteredStations,
 } = require("../models/stationModel");
 
 const createStationHandler = async (req, res) => {
@@ -111,8 +114,84 @@ const getStationById = async (req, res) => {
   }
 };
 
+const getAllStations = async (req, res) => {
+  try {
+    const filters = {
+      city: req.query.city,
+      state: req.query.state,
+      fuel_type: req.query.fuel_type,
+      is_open:
+        req.query.is_open !== undefined
+          ? req.query.is_open === "true"
+          : undefined,
+      max_price: req.query.max_price,
+    };
+
+    Object.keys(filters).forEach(
+      (key) => filters[key] === undefined && delete filters[key],
+    );
+
+    const stations = await getFilteredStations(filters);
+
+    res.json({
+      count: stations.length,
+      stations: stations,
+    });
+  } catch (error) {
+    console.error("Get all stations error:", error);
+    res.status(500).json({
+      error: "Internal server error. Please try again.",
+    });
+  }
+};
+
+const getPublicStationById = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const station = await getApprovedStationById(id);
+
+    if (!station) {
+      return res.status(404).json({
+        error: "Station not found or not yet approved",
+      });
+    }
+
+    const reviewsQuery = `
+            SELECT 
+                r.*,
+                u.full_name as reviewer_name
+            FROM reviews r
+            LEFT JOIN users u ON r.driver_id = u.id
+            WHERE r.station_id = $1
+            ORDER BY r.created_at DESC
+        `;
+    const reviewsResult = await pool.query(reviewsQuery, [id]);
+
+    const avgRatingQuery = `
+            SELECT AVG(rating) as average_rating, COUNT(*) as total_reviews
+            FROM reviews
+            WHERE station_id = $1
+        `;
+    const avgResult = await pool.query(avgRatingQuery, [id]);
+
+    res.json({
+      station: station,
+      reviews: reviewsResult.rows,
+      average_rating: parseFloat(avgResult.rows[0].average_rating) || 0,
+      total_reviews: parseInt(avgResult.rows[0].total_reviews) || 0,
+    });
+  } catch (error) {
+    console.error("Get public station error:", error);
+    res.status(500).json({
+      error: "Internal server error. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   createStationHandler,
   getMyStations,
   getStationById,
+  getAllStations,
+  getPublicStationById,
 };
