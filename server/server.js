@@ -6,11 +6,13 @@ const pool = require("./config/database");
 
 const authRoutes = require("./routes/authRoutes");
 
+const authenticate = require("./middleware/auth");
+const hasRole = require("./middleware/roles");
+
 const app = express();
 
 app.use(express.json());
 app.use(cors());
-app.use("/api/auth", authRoutes);
 
 app.get("/", (req, res) => {
   res.json({ message: "Fuel Finder API is running!" });
@@ -27,6 +29,22 @@ app.get("/api/test-db", async (req, res) => {
     console.error("Database test failed:", error);
     res.status(500).json({ error: "Database connection failed" });
   }
+});
+
+app.use("/api/auth", authRoutes);
+
+app.get("/api/protected", authenticate, (req, res) => {
+  res.json({
+    message: "You have accessed a protected route!",
+    user: req.user,
+  });
+});
+
+app.get("/api/admin-only", authenticate, hasRole(["admin"]), (req, res) => {
+  res.json({
+    message: "Welcome Admin! You have special access.",
+    user: req.user,
+  });
 });
 
 const PORT = process.env.PORT || 5000;
