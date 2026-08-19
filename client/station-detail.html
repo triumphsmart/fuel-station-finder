@@ -1,0 +1,266 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Station Details - GoFuel Finder</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-brand">
+          <a href="index.html">
+            <img
+              src="images/logomark.png"
+              alt="GoFuel Logo"
+              style="width: 200px; height: auto"
+            />
+          </a>
+        </div>
+        <div class="nav-links" id="navLinks">
+          <a href="index.html">Home</a>
+          <a href="login.html">Login</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="container">
+      <div id="stationDetail" class="station-detail">
+        <p>Loading station details...</p>
+      </div>
+
+      <div id="reviewsSection" class="reviews-section">
+        <h3>Reviews</h3>
+        <div id="reviewsList">
+          <p>No reviews yet.</p>
+        </div>
+
+        <div id="reviewForm" class="review-form" style="display: none">
+          <h4>Leave a Review</h4>
+          <form id="reviewFormElement">
+            <div class="form-group">
+              <label>Rating</label>
+              <div class="star-rating" id="starRating">
+                <span class="star" data-value="1">&#9734;</span>
+                <span class="star" data-value="2">&#9734;</span>
+                <span class="star" data-value="3">&#9734;</span>
+                <span class="star" data-value="4">&#9734;</span>
+                <span class="star" data-value="5">&#9734;</span>
+              </div>
+              <input type="hidden" id="ratingInput" value="0" />
+              <span id="ratingLabel">Select a rating</span>
+            </div>
+            <div class="form-group">
+              <label>Comment</label>
+              <textarea
+                id="comment"
+                placeholder="Share your experience..."
+                rows="3"
+              ></textarea>
+            </div>
+            <button type="submit" class="btn-primary">Submit Review</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      const stationId = new URLSearchParams(window.location.search).get("id");
+
+      // ===== STAR RATING LOGIC =====
+      const stars = document.querySelectorAll(".star");
+      const ratingInput = document.getElementById("ratingInput");
+      const ratingLabel = document.getElementById("ratingLabel");
+
+      // Star hover effect
+      stars.forEach((star) => {
+        star.addEventListener("mouseover", function () {
+          const value = parseInt(this.dataset.value);
+          highlightStars(value);
+        });
+
+        star.addEventListener("mouseout", function () {
+          const value = parseInt(ratingInput.value);
+          highlightStars(value);
+        });
+
+        star.addEventListener("click", function () {
+          const value = parseInt(this.dataset.value);
+          ratingInput.value = value;
+          highlightStars(value);
+
+          const labels = [
+            "",
+            "Terrible",
+            "Poor",
+            "Average",
+            "Good",
+            "Excellent",
+          ];
+          ratingLabel.textContent = labels[value];
+        });
+      });
+
+      function highlightStars(value) {
+        stars.forEach((star) => {
+          const starValue = parseInt(star.dataset.value);
+          if (starValue <= value) {
+            star.classList.add("active");
+            star.innerHTML = "&#9733;";
+          } else {
+            star.classList.remove("active");
+            star.innerHTML = "&#9734;";
+          }
+        });
+      }
+
+      // ===== LOAD STATION DETAIL =====
+      const loadStationDetail = async () => {
+        if (!stationId) {
+          document.getElementById("stationDetail").innerHTML =
+            "<p>No station ID provided.</p>";
+          return;
+        }
+
+        try {
+          const data = await getStationById(stationId);
+          const station = data.station;
+
+          // Generate availability text
+          const petrolStatus = station.petrol_available
+            ? "Available"
+            : "Unavailable";
+          const dieselStatus = station.diesel_available
+            ? "Available"
+            : "Unavailable";
+          const keroseneStatus = station.kerosene_available
+            ? "Available"
+            : "Unavailable";
+
+          // Generate star rating display
+          const avgRating = data.average_rating || 0;
+          const fullStars = Math.floor(avgRating);
+          const hasHalfStar = avgRating % 1 >= 0.5;
+          let starsHTML = "";
+
+          for (let i = 1; i <= 5; i++) {
+            if (i <= fullStars) {
+              starsHTML += '<span class="star-display active">&#9733;</span>';
+            } else if (i === fullStars + 1 && hasHalfStar) {
+              starsHTML += '<span class="star-display half">&#9733;</span>';
+            } else {
+              starsHTML += '<span class="star-display">&#9734;</span>';
+            }
+          }
+
+          document.getElementById("stationDetail").innerHTML = `
+                    <h2>${station.name}</h2>
+                    <p><strong>Address:</strong> ${station.address}, ${station.city}, ${station.state}</p>
+                    <p><strong>Petrol:</strong> ${formatPrice(station.petrol_price)} - ${petrolStatus}</p>
+                    <p><strong>Diesel:</strong> ${formatPrice(station.diesel_price)} - ${dieselStatus}</p>
+                    <p><strong>Kerosene:</strong> ${formatPrice(station.kerosene_price)} - ${keroseneStatus}</p>
+                    <p><strong>Status:</strong> <span class="status ${getStatusClass(station.is_open)}">${getStatusText(station.is_open)}</span></p>
+                    <p><small>Last updated: ${new Date(station.price_last_updated).toLocaleString()}</small></p>
+                    <p class="rating-display">
+                        <strong>Average Rating:</strong> 
+                        <span class="stars-container">${starsHTML}</span>
+                        (${data.total_reviews || 0} reviews)
+                    </p>
+                `;
+
+          // Load reviews
+          loadReviews(stationId);
+
+          // Show review form if logged in as driver
+          const user = getUser();
+          if (user && user.role === "driver") {
+            document.getElementById("reviewForm").style.display = "block";
+          }
+        } catch (error) {
+          document.getElementById("stationDetail").innerHTML =
+            `<p>Error: ${error.message}</p>`;
+        }
+      };
+
+      // ===== LOAD REVIEWS =====
+      const loadReviews = async (id) => {
+        try {
+          const data = await getReviews(id);
+          const container = document.getElementById("reviewsList");
+
+          if (data.reviews.length === 0) {
+            container.innerHTML = "<p>No reviews yet. Be the first!</p>";
+            return;
+          }
+
+          container.innerHTML = data.reviews
+            .map((review) => {
+              // Generate star display for each review
+              let reviewStars = "";
+              for (let i = 1; i <= 5; i++) {
+                if (i <= review.rating) {
+                  reviewStars +=
+                    '<span class="star-display active">&#9733;</span>';
+                } else {
+                  reviewStars += '<span class="star-display">&#9734;</span>';
+                }
+              }
+
+              return `
+                        <div class="review-item">
+                            <strong>${review.reviewer_name || "Anonymous"}</strong>
+                            <span class="stars-container">${reviewStars}</span>
+                            <p>${review.comment || ""}</p>
+                            <small>${new Date(review.created_at).toLocaleDateString()}</small>
+                        </div>
+                    `;
+            })
+            .join("");
+        } catch (error) {
+          document.getElementById("reviewsList").innerHTML =
+            `<p>Error loading reviews: ${error.message}</p>`;
+        }
+      };
+
+      // ===== SUBMIT REVIEW =====
+      document
+        .getElementById("reviewFormElement")
+        ?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const rating = parseInt(document.getElementById("ratingInput").value);
+          const comment = document.getElementById("comment").value;
+
+          if (rating === 0) {
+            alert("Please select a rating.");
+            return;
+          }
+
+          try {
+            await leaveReview(stationId, { rating, comment });
+            alert("Review submitted successfully!");
+            loadReviews(stationId);
+            document.getElementById("reviewFormElement").reset();
+            // Reset stars
+            ratingInput.value = 0;
+            highlightStars(0);
+            ratingLabel.textContent = "Select a rating";
+            document.getElementById("comment").value = "";
+          } catch (error) {
+            alert("Error submitting review: " + error.message);
+          }
+        });
+
+      // ===== INIT =====
+      document.addEventListener("DOMContentLoaded", () => {
+        updateNav();
+        loadStationDetail();
+      });
+    </script>
+  </body>
+</html>

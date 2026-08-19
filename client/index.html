@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>GoFuel Finder - Find Fuel Near You</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-brand">
+          <a href="index.html">
+            <img
+              src="images/logomark.png"
+              alt="GoFuel Logo"
+              style="width: 200px; height: auto"
+            />
+          </a>
+        </div>
+        <div class="nav-links" id="navLinks">
+          <a href="index.html">Home</a>
+          <a href="#" id="authLink">Login</a>
+        </div>
+      </div>
+    </nav>
+
+    <header class="hero">
+      <div class="container">
+        <h1>Find Fuel Near You</h1>
+        <p>Real-time fuel prices and availability from station owners</p>
+        <div class="filters">
+          <input type="text" id="cityFilter" placeholder="Search by city..." />
+          <select id="fuelFilter">
+            <option value="">All Fuel Types</option>
+            <option value="petrol">Petrol</option>
+            <option value="diesel">Diesel</option>
+            <option value="kerosene">Kerosene</option>
+          </select>
+          <select id="statusFilter">
+            <option value="">All Stations</option>
+            <option value="true">Open</option>
+            <option value="false">Closed</option>
+          </select>
+          <button id="applyFilters">Search</button>
+        </div>
+      </div>
+    </header>
+
+    <section class="stations-section">
+      <div class="container">
+        <h2>Nearby Stations</h2>
+        <div id="stationsList" class="stations-grid">
+          <!-- Stations will be loaded here by JavaScript -->
+          <p>Loading stations...</p>
+        </div>
+      </div>
+    </section>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/stations.js"></script>
+  </body>
+</html>

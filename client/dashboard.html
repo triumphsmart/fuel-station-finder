@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Dashboard - GoFuel Finder</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-brand">
+          <a href="index.html">
+            <img
+              src="images/logomark.png"
+              alt="GoFuel Logo"
+              style="width: 200px; height: auto"
+            />
+          </a>
+        </div>
+        <div class="nav-links" id="navLinks">
+          <a href="index.html">Home</a>
+          <a href="#" id="logoutLink">Logout</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="dashboard-redirect">
+      <div class="redirect-card">
+        <div class="spinner"></div>
+        <h2>Redirecting...</h2>
+        <p id="redirectMessage">
+          Please wait while we take you to your dashboard.
+        </p>
+      </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      document.addEventListener("DOMContentLoaded", () => {
+        const user = getUser();
+
+        // If not logged in, redirect to login
+        if (!user) {
+          window.location.href = "login.html";
+          return;
+        }
+
+        // Update navbar
+        updateNav();
+
+        // Redirect based on role
+        let targetPage = "index.html";
+        let message = "";
+
+        switch (user.role) {
+          case "admin":
+            targetPage = "admin-dashboard.html";
+            message = "Welcome Admin! Taking you to the admin dashboard.";
+            break;
+          case "station_owner":
+            targetPage = "owner-dashboard.html";
+            message = "Welcome! Taking you to your station dashboard.";
+            break;
+          case "driver":
+            targetPage = "index.html";
+            message = "Welcome! Taking you to find fuel near you.";
+            break;
+          default:
+            targetPage = "index.html";
+            message = "Welcome! Taking you to the homepage.";
+        }
+
+        document.getElementById("redirectMessage").textContent = message;
+
+        // Redirect after 1.5 seconds
+        setTimeout(() => {
+          window.location.href = targetPage;
+        }, 1500);
+      });
+    </script>
+  </body>
+</html>

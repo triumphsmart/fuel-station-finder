@@ -1,0 +1,272 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Create Station - GoFuel Finder</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-brand">
+          <a href="index.html">
+            <img
+              src="images/logomark.png"
+              alt="GoFuel Logo"
+              style="width: 200px; height: auto"
+            />
+          </a>
+        </div>
+        <div class="nav-links" id="navLinks">
+          <a href="index.html">Home</a>
+          <a href="owner-dashboard.html">Dashboard</a>
+          <a href="#" id="logoutLink">Logout</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="auth-container">
+      <div class="auth-card" style="max-width: 500px">
+        <h2 id="formTitle">Create New Station</h2>
+        <form id="stationForm">
+          <div class="form-group">
+            <label>Station Name</label>
+            <input
+              type="text"
+              id="name"
+              placeholder="e.g., GoFuel Filling Station"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Address</label>
+            <input
+              type="text"
+              id="address"
+              placeholder="Street address"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>City</label>
+            <input type="text" id="city" placeholder="e.g., Yenagoa" required />
+          </div>
+          <div class="form-group">
+            <label>State</label>
+            <input
+              type="text"
+              id="state"
+              placeholder="e.g., Bayelsa"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Latitude</label>
+            <input
+              type="number"
+              id="latitude"
+              step="0.00000001"
+              placeholder="e.g., 6.4281"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Longitude</label>
+            <input
+              type="number"
+              id="longitude"
+              step="0.00000001"
+              placeholder="e.g., 3.4219"
+              required
+            />
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+            <div class="form-group">
+              <label>Petrol Price</label>
+              <input
+                type="number"
+                id="petrol_price"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+            <div class="form-group">
+              <label>Petrol Available</label>
+              <select id="petrol_available">
+                <option value="true">Yes</option>
+                <option value="false" selected>No</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+            <div class="form-group">
+              <label>Diesel Price</label>
+              <input
+                type="number"
+                id="diesel_price"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+            <div class="form-group">
+              <label>Diesel Available</label>
+              <select id="diesel_available">
+                <option value="true">Yes</option>
+                <option value="false" selected>No</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
+            <div class="form-group">
+              <label>Kerosene Price</label>
+              <input
+                type="number"
+                id="kerosene_price"
+                step="0.01"
+                placeholder="0.00"
+              />
+            </div>
+            <div class="form-group">
+              <label>Kerosene Available</label>
+              <select id="kerosene_available">
+                <option value="true">Yes</option>
+                <option value="false" selected>No</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Is Station Open?</label>
+            <select id="is_open">
+              <option value="true">Yes</option>
+              <option value="false">No</option>
+            </select>
+          </div>
+          <div
+            id="errorMessage"
+            class="error-message"
+            style="display: none"
+          ></div>
+          <button type="submit" class="btn-primary" id="submitBtn">
+            Create Station
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      const stationId = new URLSearchParams(window.location.search).get("edit");
+      let isEditing = false;
+      let stationData = null;
+
+      const loadStationData = async (id) => {
+        try {
+          const data = await getStationById(id);
+          stationData = data;
+          document.getElementById("formTitle").textContent = "Edit Station";
+          document.getElementById("submitBtn").textContent = "Update Station";
+          isEditing = true;
+
+          // Populate form
+          document.getElementById("name").value = data.name || "";
+          document.getElementById("address").value = data.address || "";
+          document.getElementById("city").value = data.city || "";
+          document.getElementById("state").value = data.state || "";
+          document.getElementById("latitude").value = data.latitude || "";
+          document.getElementById("longitude").value = data.longitude || "";
+          document.getElementById("petrol_price").value =
+            data.petrol_price || "";
+          document.getElementById("petrol_available").value =
+            data.petrol_available ? "true" : "false";
+          document.getElementById("diesel_price").value =
+            data.diesel_price || "";
+          document.getElementById("diesel_available").value =
+            data.diesel_available ? "true" : "false";
+          document.getElementById("kerosene_price").value =
+            data.kerosene_price || "";
+          document.getElementById("kerosene_available").value =
+            data.kerosene_available ? "true" : "false";
+          document.getElementById("is_open").value = data.is_open
+            ? "true"
+            : "false";
+        } catch (error) {
+          document.getElementById("errorMessage").textContent =
+            "Error loading station: " + error.message;
+          document.getElementById("errorMessage").style.display = "block";
+        }
+      };
+
+      document
+        .getElementById("stationForm")
+        .addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const errorDiv = document.getElementById("errorMessage");
+          errorDiv.style.display = "none";
+
+          const formData = {
+            name: document.getElementById("name").value,
+            address: document.getElementById("address").value,
+            city: document.getElementById("city").value,
+            state: document.getElementById("state").value,
+            latitude: parseFloat(document.getElementById("latitude").value),
+            longitude: parseFloat(document.getElementById("longitude").value),
+            petrol_price:
+              parseFloat(document.getElementById("petrol_price").value) || null,
+            petrol_available:
+              document.getElementById("petrol_available").value === "true",
+            diesel_price:
+              parseFloat(document.getElementById("diesel_price").value) || null,
+            diesel_available:
+              document.getElementById("diesel_available").value === "true",
+            kerosene_price:
+              parseFloat(document.getElementById("kerosene_price").value) ||
+              null,
+            kerosene_available:
+              document.getElementById("kerosene_available").value === "true",
+            is_open: document.getElementById("is_open").value === "true",
+          };
+
+          try {
+            let result;
+            if (isEditing && stationId) {
+              result = await updateStation(stationId, formData);
+              alert("Station updated successfully!");
+            } else {
+              result = await createStation(formData);
+              alert(
+                "Station created successfully! Waiting for admin approval.",
+              );
+            }
+            window.location.href = "owner-dashboard.html";
+          } catch (error) {
+            errorDiv.textContent = error.message;
+            errorDiv.style.display = "block";
+          }
+        });
+
+      document.addEventListener("DOMContentLoaded", () => {
+        updateNav();
+
+        const user = getUser();
+        if (!user) {
+          window.location.href = "login.html";
+          return;
+        }
+        if (user.role !== "station_owner" && user.role !== "admin") {
+          alert("Access denied. Station owners only.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        if (stationId) {
+          loadStationData(stationId);
+        }
+      });
+    </script>
+  </body>
+</html>

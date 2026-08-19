@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
+    <title>Admin Dashboard - GoFuel Finder</title>
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <nav class="navbar">
+      <div class="container">
+        <div class="nav-brand">
+          <a href="index.html">
+            <img
+              src="images/logomark.png"
+              alt="GoFuel Logo"
+              style="width: 200px; height: auto"
+            />
+          </a>
+        </div>
+        <div class="nav-links" id="navLinks">
+          <a href="index.html">Home</a>
+          <a href="admin-dashboard.html">Admin</a>
+          <a href="#" id="logoutLink">Logout</a>
+        </div>
+      </div>
+    </nav>
+
+    <div class="dashboard-container container">
+      <h2>Admin Dashboard</h2>
+
+      <div
+        style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px"
+      >
+        <div class="stat-card stat-card-pending">
+          <h3 id="pendingCount">0</h3>
+          <p>Pending Stations</p>
+        </div>
+        <div class="stat-card stat-card-approved">
+          <h3 id="approvedCount">0</h3>
+          <p>Approved Stations</p>
+        </div>
+        <div class="stat-card stat-card-users">
+          <h3 id="userCount">0</h3>
+          <p>Total Users</p>
+        </div>
+      </div>
+
+      <h3>Pending Stations</h3>
+      <div id="pendingStationsList">
+        <p class="loading">Loading pending stations...</p>
+      </div>
+
+      <h3 style="margin-top: 40px">All Users</h3>
+      <div id="usersList">
+        <p class="loading">Loading users...</p>
+      </div>
+
+      <!-- Super Admin Section - Create New Admin -->
+      <div id="createAdminSection" class="create-admin-section">
+        <h3>Create New Admin</h3>
+        <p class="sub-text">
+          Only the Super Admin can create new admin accounts.
+        </p>
+        <form id="createAdminForm" class="create-admin-form">
+          <div class="form-group">
+            <label>Full Name</label>
+            <input
+              type="text"
+              id="adminName"
+              placeholder="Admin Name"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input
+              type="email"
+              id="adminEmail"
+              placeholder="admin@email.com"
+              required
+            />
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input type="text" id="adminPhone" placeholder="Phone number" />
+          </div>
+          <button type="submit" class="btn-primary">Create Admin</button>
+        </form>
+        <div id="adminCreateMessage" style="margin-top: 15px"></div>
+      </div>
+    </div>
+
+    <script src="js/utils.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/auth.js"></script>
+    <script>
+      // Store the super admin email
+      const SUPER_ADMIN_EMAIL = "admin@gofuel.com";
+
+      // ===== LOAD PENDING STATIONS =====
+      const loadPendingStations = async () => {
+        const container = document.getElementById("pendingStationsList");
+        container.innerHTML =
+          '<p class="loading">Loading pending stations...</p>';
+
+        try {
+          console.log("Fetching pending stations...");
+          const data = await getPendingStations();
+          console.log("Pending stations data:", data);
+
+          if (data.count === 0 || data.stations.length === 0) {
+            container.innerHTML =
+              "<p>No pending stations. All stations have been approved.</p>";
+            document.getElementById("pendingCount").textContent = "0";
+            return;
+          }
+
+          document.getElementById("pendingCount").textContent = data.count;
+
+          container.innerHTML = data.stations
+            .map(
+              (station) => `
+            <div class="station-management-card">
+                <h3>${station.name}</h3>
+                <p><strong>Owner:</strong> ${station.owner_name || "Unknown"} (${station.owner_email || "No email"})</p>
+                <p><strong>Address:</strong> ${station.address}, ${station.city}, ${station.state}</p>
+                <p><strong>Petrol:</strong> ${formatPrice(station.petrol_price)}</p>
+                <div class="station-actions">
+                    <button class="btn-approve" onclick="handleApproveStation('${station.id}')">Approve</button>
+                    <button class="btn-reject" onclick="handleRejectStation('${station.id}')">Reject</button>
+                </div>
+            </div>
+        `,
+            )
+            .join("");
+        } catch (error) {
+          console.error("Error loading pending stations:", error);
+          container.innerHTML = `<p class="loading">Error: ${error.message}. Check console for details.</p>`;
+        }
+      };
+
+      // ===== HANDLE APPROVE =====
+      const handleApproveStation = async (id) => {
+        if (!confirm("Approve this station?")) return;
+        try {
+          await approveStation(id);
+          alert("Station approved!");
+          loadPendingStations();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      };
+
+      // ===== HANDLE REJECT =====
+      const handleRejectStation = async (id) => {
+        if (!confirm("Reject this station?")) return;
+        try {
+          await rejectStation(id);
+          alert("Station rejected.");
+          loadPendingStations();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      };
+
+      // ===== LOAD USERS =====
+      const loadUsers = async () => {
+        const container = document.getElementById("usersList");
+
+        try {
+          const data = await getUsers();
+          document.getElementById("userCount").textContent = data.count;
+
+          container.innerHTML = data.users
+            .map(
+              (user) => `
+                <div class="station-management-card" style="border-left-color: ${user.is_active ? "#28a745" : "#dc3545"};">
+                    <h3>${user.full_name}</h3>
+                    <p><strong>Email:</strong> ${user.email}</p>
+                    <p><strong>Phone:</strong> ${user.phone || "Not provided"}</p>
+                    <p><strong>Role:</strong> ${user.role}</p>
+                    <p><strong>Status:</strong> ${user.is_active ? "Active" : "Inactive"}</p>
+                    ${user.is_active && user.role !== "admin" ? `<div class="station-actions"><button class="btn-delete" onclick="handleDeactivateUser('${user.id}')">Deactivate</button></div>` : ""}
+                </div>
+            `,
+            )
+            .join("");
+        } catch (error) {
+          container.innerHTML = `<p class="loading">Error: ${error.message}</p>`;
+        }
+      };
+
+      // ===== HANDLE DEACTIVATE USER =====
+      const handleDeactivateUser = async (id) => {
+        if (!confirm("Deactivate this user?")) return;
+        try {
+          await deactivateUser(id);
+          alert("User deactivated.");
+          loadUsers();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      };
+
+      // ===== SUPER ADMIN: Create Admin =====
+      const createAdmin = async (full_name, email, phone, password) => {
+        try {
+          const response = await fetch(`${API_BASE_URL}/auth/register`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${getToken()}`,
+            },
+            body: JSON.stringify({
+              full_name,
+              email,
+              phone,
+              password,
+              role: "admin",
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || "Failed to create admin");
+          }
+          return data;
+        } catch (error) {
+          throw error;
+        }
+      };
+
+      // ===== DOM CONTENT LOADED =====
+      document.addEventListener("DOMContentLoaded", () => {
+        updateNav();
+
+        const user = getUser();
+        if (!user) {
+          window.location.href = "login.html";
+          return;
+        }
+        if (user.role !== "admin") {
+          alert("Access denied. Admin only.");
+          window.location.href = "index.html";
+          return;
+        }
+
+        // Show Super Admin section if email matches
+        if (user.email === SUPER_ADMIN_EMAIL) {
+          document.getElementById("createAdminSection").style.display = "block";
+        }
+
+        loadPendingStations();
+        loadUsers();
+      });
+
+      // ===== HANDLE ADMIN CREATION FORM =====
+      document
+        .getElementById("createAdminForm")
+        ?.addEventListener("submit", async (e) => {
+          e.preventDefault();
+
+          const full_name = document.getElementById("adminName").value;
+          const email = document.getElementById("adminEmail").value;
+          const phone = document.getElementById("adminPhone").value;
+          const password = "admin123" + Math.floor(Math.random() * 1000);
+
+          const messageDiv = document.getElementById("adminCreateMessage");
+          messageDiv.innerHTML = "";
+
+          try {
+            await createAdmin(full_name, email, phone, password);
+            messageDiv.innerHTML = `
+                <div class="success-message">
+                    Admin created successfully!<br>
+                    <strong>Email:</strong> ${email}<br>
+                    <strong>Password:</strong> ${password}
+                </div>
+            `;
+            document.getElementById("createAdminForm").reset();
+            loadUsers();
+          } catch (error) {
+            messageDiv.innerHTML = `<div class="error-message">${error.message}</div>`;
+          }
+        });
+    </script>
+  </body>
+</html>
