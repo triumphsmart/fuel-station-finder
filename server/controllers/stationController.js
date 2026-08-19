@@ -77,8 +77,16 @@ const createStationHandler = async (req, res) => {
 
 const getMyStations = async (req, res) => {
   try {
+    console.log("=== GET MY STATIONS ===");
+    console.log("Headers:", req.headers);
+    console.log("User object:", req.user);
+    console.log("Owner ID from req.user:", req.user?.userId);
+
     const owner_id = req.user.userId;
+    console.log("Owner ID being used:", owner_id);
+
     const stations = await findStationsByOwner(owner_id);
+    console.log("Stations found:", stations.length);
 
     res.json({
       count: stations.length,
@@ -86,6 +94,8 @@ const getMyStations = async (req, res) => {
     });
   } catch (error) {
     console.error("Get my stations error:", error);
+    console.error("Error details:", error.message);
+    console.error("Stack:", error.stack);
     res.status(500).json({
       error: "Internal server error. Please try again.",
     });
