@@ -6,6 +6,7 @@ const pool = require("./config/database");
 
 const authRoutes = require("./routes/authRoutes");
 const stationRoutes = require("./routes/stationRoutes");
+const reviewRoutes = require("./routes/reviewRoutes");
 
 const authenticate = require("./middleware/auth");
 const hasRole = require("./middleware/roles");
@@ -34,6 +35,7 @@ app.get("/api/test-db", async (req, res) => {
 
 app.use("/api/auth", authRoutes);
 app.use("/api/stations", stationRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/api/protected", authenticate, (req, res) => {
   res.json({
