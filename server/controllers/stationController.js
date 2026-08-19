@@ -262,6 +262,49 @@ const updateStationHandler = async (req, res) => {
   }
 };
 
+// Delete a station (owner or admin)
+const deleteStationHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.userId;
+    const isAdmin = req.user.role === "admin";
+
+    // Check if station exists
+    const station = await findStationById(id);
+    if (!station) {
+      return res.status(404).json({
+        error: "Station not found",
+      });
+    }
+
+    // Check permissions
+    if (!isAdmin && station.owner_id !== userId) {
+      return res.status(403).json({
+        error: "You do not have permission to delete this station",
+      });
+    }
+
+    // Delete the station
+    const deletedStation = await deleteStation(id, userId, isAdmin);
+
+    if (!deletedStation) {
+      return res.status(404).json({
+        error: "Station not found or you do not have permission",
+      });
+    }
+
+    res.json({
+      message: "Station deleted successfully!",
+      station: deletedStation,
+    });
+  } catch (error) {
+    console.error("Delete station error:", error);
+    res.status(500).json({
+      error: "Internal server error. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   createStationHandler,
   getMyStations,
@@ -269,4 +312,5 @@ module.exports = {
   getAllStations,
   getPublicStationById,
   updateStationHandler,
+  deleteStationHandler,
 };

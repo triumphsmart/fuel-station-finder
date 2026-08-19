@@ -204,6 +204,25 @@ const updateStationStatus = async (id, owner_id, status) => {
   return result.rows[0];
 };
 
+// Delete a station (owner or admin)
+const deleteStation = async (id, owner_id, isAdmin = false) => {
+  let query;
+  let values;
+
+  if (isAdmin) {
+    // Admin can delete any station
+    query = "DELETE FROM stations WHERE id = $1 RETURNING *";
+    values = [id];
+  } else {
+    // Owner can delete their own station
+    query = "DELETE FROM stations WHERE id = $1 AND owner_id = $2 RETURNING *";
+    values = [id, owner_id];
+  }
+
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
 module.exports = {
   createStation,
   findStationById,
@@ -213,4 +232,5 @@ module.exports = {
   getApprovedStations,
   getApprovedStationById,
   getFilteredStations,
+  deleteStation,
 };

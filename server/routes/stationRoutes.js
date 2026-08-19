@@ -11,6 +11,7 @@ const {
   getAllStations,
   getPublicStationById,
   updateStationHandler,
+  deleteStationHandler,
 } = require("../controllers/stationController");
 
 router.get("/", getAllStations); // Public route to get all approved stations
@@ -25,5 +26,11 @@ router.get("/my-stations", hasRole(["station_owner", "admin"]), getMyStations);
 router.get("/:id", hasRole(["station_owner", "admin"]), getStationById);
 
 router.put("/:id", hasRole(["station_owner", "admin"]), updateStationHandler);
+
+router.delete(
+  "/:id",
+  hasRole(["station_owner", "admin"]),
+  deleteStationHandler,
+);
 
 module.exports = router;
