@@ -5,7 +5,11 @@ const {
   getApprovedStations,
   getApprovedStationById,
   getFilteredStations,
+  updateStation,
+  updateStationStatus,
 } = require("../models/stationModel");
+
+const pool = require("../config/database"); // Import the database connection
 
 const createStationHandler = async (req, res) => {
   try {
@@ -188,10 +192,81 @@ const getPublicStationById = async (req, res) => {
   }
 };
 
+const updateStationHandler = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const owner_id = req.user.userId;
+
+    const existingStation = await findStationById(id);
+    if (!existingStation) {
+      return res.status(404).json({
+        error: "Station not found",
+      });
+    }
+
+    if (existingStation.owner_id !== owner_id) {
+      return res.status(403).json({
+        error: "You do not have permission to update this station",
+      });
+    }
+
+    const { status, ...updateData } = req.body;
+
+    delete updateData.owner_id;
+
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        error: "No fields to update",
+      });
+    }
+
+    if (updateData.latitude !== undefined && isNaN(updateData.latitude)) {
+      return res.status(400).json({
+        error: "Latitude must be a valid number",
+      });
+    }
+    if (updateData.longitude !== undefined && isNaN(updateData.longitude)) {
+      return res.status(400).json({
+        error: "Longitude must be a valid number",
+      });
+    }
+
+    if (updateData.latitude)
+      updateData.latitude = parseFloat(updateData.latitude);
+    if (updateData.longitude)
+      updateData.longitude = parseFloat(updateData.longitude);
+    if (updateData.petrol_price)
+      updateData.petrol_price = parseFloat(updateData.petrol_price);
+    if (updateData.diesel_price)
+      updateData.diesel_price = parseFloat(updateData.diesel_price);
+    if (updateData.kerosene_price)
+      updateData.kerosene_price = parseFloat(updateData.kerosene_price);
+
+    const updatedStation = await updateStation(id, owner_id, updateData);
+
+    if (!updatedStation) {
+      return res.status(404).json({
+        error: "Station not found or you do not own it",
+      });
+    }
+
+    res.json({
+      message: "Station updated successfully!",
+      station: updatedStation,
+    });
+  } catch (error) {
+    console.error("Update station error:", error);
+    res.status(500).json({
+      error: "Internal server error. Please try again.",
+    });
+  }
+};
+
 module.exports = {
   createStationHandler,
   getMyStations,
   getStationById,
   getAllStations,
   getPublicStationById,
+  updateStationHandler,
 };

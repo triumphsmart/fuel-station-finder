@@ -147,10 +147,69 @@ const getFilteredStations = async (filters) => {
   return result.rows;
 };
 
+const updateStation = async (id, owner_id, updateData) => {
+  const fields = [];
+  const values = [];
+  let paramCounter = 1;
+
+  const fieldMap = {
+    name: "name",
+    address: "address",
+    city: "city",
+    state: "state",
+    latitude: "latitude",
+    longitude: "longitude",
+    petrol_price: "petrol_price",
+    diesel_price: "diesel_price",
+    kerosene_price: "kerosene_price",
+    petrol_available: "petrol_available",
+    diesel_available: "diesel_available",
+    kerosene_available: "kerosene_available",
+    is_open: "is_open",
+  };
+
+  for (const [key, dbField] of Object.entries(fieldMap)) {
+    if (updateData[key] !== undefined) {
+      fields.push(`${dbField} = $${paramCounter}`);
+      values.push(updateData[key]);
+      paramCounter++;
+    }
+  }
+
+  fields.push(`price_last_updated = CURRENT_TIMESTAMP`);
+  fields.push(`updated_at = CURRENT_TIMESTAMP`);
+
+  values.push(id);
+  values.push(owner_id);
+
+  const query = `
+        UPDATE stations 
+        SET ${fields.join(", ")}
+        WHERE id = $${paramCounter} AND owner_id = $${paramCounter + 1}
+        RETURNING *
+    `;
+
+  const result = await pool.query(query, values);
+  return result.rows[0];
+};
+
+const updateStationStatus = async (id, owner_id, status) => {
+  const query = `
+    UPDATE stations
+    SET status = $1, updated_at = CURRENT_TIMESTAMP
+    WHERE id = $2 AND owner_id = $3 
+    RETURNING *
+  `;
+  const result = await pool.query(query, [status, id, owner_id]);
+  return result.rows[0];
+};
+
 module.exports = {
   createStation,
   findStationById,
   findStationsByOwner,
+  updateStation,
+  updateStationStatus,
   getApprovedStations,
   getApprovedStationById,
   getFilteredStations,
