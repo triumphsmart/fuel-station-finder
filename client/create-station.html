@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
-    <title>Create Station - GoFuel Finder</title>
+    <title>Create/Edit Station - GoFuel Finder</title>
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -31,12 +31,13 @@
       <div class="auth-card" style="max-width: 500px">
         <h2 id="formTitle">Create New Station</h2>
         <form id="stationForm">
+          <!-- ===== BASIC INFO ===== -->
           <div class="form-group">
             <label>Station Name</label>
             <input
               type="text"
               id="name"
-              placeholder="e.g., GoFuel Filling Station"
+              placeholder="e.g., Oando Filling Station"
               required
             />
           </div>
@@ -51,16 +52,11 @@
           </div>
           <div class="form-group">
             <label>City</label>
-            <input type="text" id="city" placeholder="e.g., Yenagoa" required />
+            <input type="text" id="city" placeholder="e.g., Lagos" required />
           </div>
           <div class="form-group">
             <label>State</label>
-            <input
-              type="text"
-              id="state"
-              placeholder="e.g., Bayelsa"
-              required
-            />
+            <input type="text" id="state" placeholder="e.g., Lagos" required />
           </div>
           <div class="form-group">
             <label>Latitude</label>
@@ -82,6 +78,8 @@
               required
             />
           </div>
+
+          <!-- ===== FUEL PRICES ===== -->
           <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px">
             <div class="form-group">
               <label>Petrol Price</label>
@@ -96,7 +94,7 @@
               <label>Petrol Available</label>
               <select id="petrol_available">
                 <option value="true">Yes</option>
-                <option value="false" selected>No</option>
+                <option value="false">No</option>
               </select>
             </div>
           </div>
@@ -114,7 +112,7 @@
               <label>Diesel Available</label>
               <select id="diesel_available">
                 <option value="true">Yes</option>
-                <option value="false" selected>No</option>
+                <option value="false">No</option>
               </select>
             </div>
           </div>
@@ -132,10 +130,12 @@
               <label>Kerosene Available</label>
               <select id="kerosene_available">
                 <option value="true">Yes</option>
-                <option value="false" selected>No</option>
+                <option value="false">No</option>
               </select>
             </div>
           </div>
+
+          <!-- ===== STATUS ===== -->
           <div class="form-group">
             <label>Is Station Open?</label>
             <select id="is_open">
@@ -143,6 +143,7 @@
               <option value="false">No</option>
             </select>
           </div>
+
           <div
             id="errorMessage"
             class="error-message"
@@ -151,6 +152,17 @@
           <button type="submit" class="btn-primary" id="submitBtn">
             Create Station
           </button>
+          <a
+            href="owner-dashboard.html"
+            class="btn-secondary"
+            style="
+              display: block;
+              text-align: center;
+              margin-top: 15px;
+              text-decoration: none;
+            "
+            >Back to Dashboard</a
+          >
         </form>
       </div>
     </div>
@@ -159,47 +171,57 @@
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script>
+      // ===== GET STATION ID FROM URL =====
       const stationId = new URLSearchParams(window.location.search).get("edit");
       let isEditing = false;
-      let stationData = null;
 
+      // ===== LOAD STATION DATA FOR EDIT =====
       const loadStationData = async (id) => {
         try {
           const data = await getStationById(id);
-          stationData = data;
+          const station = data.station; // The API returns { station: {...} }
+
+          if (!station) {
+            alert("Station not found.");
+            window.location.href = "owner-dashboard.html";
+            return;
+          }
+
+          isEditing = true;
           document.getElementById("formTitle").textContent = "Edit Station";
           document.getElementById("submitBtn").textContent = "Update Station";
-          isEditing = true;
 
-          // Populate form
-          document.getElementById("name").value = data.name || "";
-          document.getElementById("address").value = data.address || "";
-          document.getElementById("city").value = data.city || "";
-          document.getElementById("state").value = data.state || "";
-          document.getElementById("latitude").value = data.latitude || "";
-          document.getElementById("longitude").value = data.longitude || "";
+          // Populate ALL form fields
+          document.getElementById("name").value = station.name || "";
+          document.getElementById("address").value = station.address || "";
+          document.getElementById("city").value = station.city || "";
+          document.getElementById("state").value = station.state || "";
+          document.getElementById("latitude").value = station.latitude || "";
+          document.getElementById("longitude").value = station.longitude || "";
           document.getElementById("petrol_price").value =
-            data.petrol_price || "";
+            station.petrol_price || "";
           document.getElementById("petrol_available").value =
-            data.petrol_available ? "true" : "false";
+            station.petrol_available ? "true" : "false";
           document.getElementById("diesel_price").value =
-            data.diesel_price || "";
+            station.diesel_price || "";
           document.getElementById("diesel_available").value =
-            data.diesel_available ? "true" : "false";
+            station.diesel_available ? "true" : "false";
           document.getElementById("kerosene_price").value =
-            data.kerosene_price || "";
+            station.kerosene_price || "";
           document.getElementById("kerosene_available").value =
-            data.kerosene_available ? "true" : "false";
-          document.getElementById("is_open").value = data.is_open
+            station.kerosene_available ? "true" : "false";
+          document.getElementById("is_open").value = station.is_open
             ? "true"
             : "false";
         } catch (error) {
+          console.error("Load station error:", error);
           document.getElementById("errorMessage").textContent =
             "Error loading station: " + error.message;
           document.getElementById("errorMessage").style.display = "block";
         }
       };
 
+      // ===== SUBMIT FORM =====
       document
         .getElementById("stationForm")
         .addEventListener("submit", async (e) => {
@@ -209,10 +231,10 @@
           errorDiv.style.display = "none";
 
           const formData = {
-            name: document.getElementById("name").value,
-            address: document.getElementById("address").value,
-            city: document.getElementById("city").value,
-            state: document.getElementById("state").value,
+            name: document.getElementById("name").value.trim(),
+            address: document.getElementById("address").value.trim(),
+            city: document.getElementById("city").value.trim(),
+            state: document.getElementById("state").value.trim(),
             latitude: parseFloat(document.getElementById("latitude").value),
             longitude: parseFloat(document.getElementById("longitude").value),
             petrol_price:
@@ -231,9 +253,28 @@
             is_open: document.getElementById("is_open").value === "true",
           };
 
+          // Validation
+          if (
+            !formData.name ||
+            !formData.address ||
+            !formData.city ||
+            !formData.state
+          ) {
+            errorDiv.textContent = "Please fill in all required fields.";
+            errorDiv.style.display = "block";
+            return;
+          }
+
+          if (isNaN(formData.latitude) || isNaN(formData.longitude)) {
+            errorDiv.textContent =
+              "Latitude and Longitude must be valid numbers.";
+            errorDiv.style.display = "block";
+            return;
+          }
+
           try {
             let result;
-            if (isEditing && stationId) {
+            if (isEditing) {
               result = await updateStation(stationId, formData);
               alert("Station updated successfully!");
             } else {
@@ -249,9 +290,11 @@
           }
         });
 
+      // ===== DOM CONTENT LOADED =====
       document.addEventListener("DOMContentLoaded", () => {
         updateNav();
 
+        // Check if user is logged in
         const user = getUser();
         if (!user) {
           window.location.href = "login.html";
@@ -263,6 +306,7 @@
           return;
         }
 
+        // Check if editing
         if (stationId) {
           loadStationData(stationId);
         }

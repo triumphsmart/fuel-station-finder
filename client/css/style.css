@@ -816,3 +816,77 @@ body {
   width: auto;
   padding: 10px 25px;
 }
+
+/* ===== STATION ACTION BUTTONS ===== */
+.station-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 15px;
+}
+
+.station-actions a,
+.station-actions button {
+  display: inline-block;
+  padding: 8px 20px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  text-decoration: none;
+  cursor: pointer;
+  border: none;
+  transition:
+    background 0.3s,
+    transform 0.2s;
+  text-align: center;
+}
+
+.station-actions a:hover,
+.station-actions button:hover {
+  transform: translateY(-2px);
+}
+
+.station-actions a:active,
+.station-actions button:active {
+  transform: translateY(0px);
+}
+
+/* Edit Button */
+.btn-edit {
+  background: var(--secondary-orange);
+  color: var(--text-light);
+}
+
+.btn-edit:hover {
+  background: #d45a18;
+}
+
+/* Delete Button */
+.btn-delete {
+  background: #dc3545;
+  color: var(--text-light);
+}
+
+.btn-delete:hover {
+  background: #c82333;
+}
+
+/* Approve Button */
+.btn-approve {
+  background: #28a745;
+  color: var(--text-light);
+}
+
+.btn-approve:hover {
+  background: #218838;
+}
+
+/* Reject Button */
+.btn-reject {
+  background: #ffc107;
+  color: var(--text-dark);
+}
+
+.btn-reject:hover {
+  background: #e0a800;
+}
