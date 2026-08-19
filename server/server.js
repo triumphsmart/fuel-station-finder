@@ -35,11 +35,8 @@ app.get("/api/test-db", async (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
-
-app.use("/api/stations", stationRoutes);
-
 app.use("/api/stations", reviewRoutes);
-
+app.use("/api/stations", stationRoutes);
 app.use("/api/admin", adminRoutes);
 
 app.get("/api/protected", authenticate, (req, res) => {
@@ -51,7 +48,7 @@ app.get("/api/protected", authenticate, (req, res) => {
 
 app.get("/api/admin-only", authenticate, hasRole(["admin"]), (req, res) => {
   res.json({
-    message: "Welcome Admin! You have special access.",
+    message: "Welcome Admin! You have administrative access.",
     user: req.user,
   });
 });
