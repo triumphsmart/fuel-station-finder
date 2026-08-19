@@ -30,6 +30,7 @@
     <div class="dashboard-container container">
       <h2>Admin Dashboard</h2>
 
+      <!-- Stats -->
       <div
         style="display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px"
       >
@@ -47,14 +48,102 @@
         </div>
       </div>
 
-      <h3>Pending Stations</h3>
-      <div id="pendingStationsList">
-        <p class="loading">Loading pending stations...</p>
+      <!-- Tabs -->
+      <div
+        style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap"
+      >
+        <button
+          class="btn-primary"
+          onclick="switchTab('pending')"
+          id="tabPending"
+          style="width: auto"
+        >
+          Pending Stations
+        </button>
+        <button
+          class="btn-secondary"
+          onclick="switchTab('all')"
+          id="tabAll"
+          style="width: auto"
+        >
+          All Stations
+        </button>
+        <button
+          class="btn-secondary"
+          onclick="switchTab('users')"
+          id="tabUsers"
+          style="width: auto"
+        >
+          All Users
+        </button>
       </div>
 
-      <h3 style="margin-top: 40px">All Users</h3>
-      <div id="usersList">
-        <p class="loading">Loading users...</p>
+      <!-- Pending Stations Tab -->
+      <div id="pendingTab">
+        <h3>Pending Stations</h3>
+        <div id="pendingStationsList">
+          <p class="loading">Loading pending stations...</p>
+        </div>
+      </div>
+
+      <!-- All Stations Tab -->
+      <div id="allStationsTab" style="display: none">
+        <h3>All Stations</h3>
+        <div
+          style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 15px"
+        >
+          <input
+            type="text"
+            id="filterCity"
+            placeholder="Filter by city..."
+            style="
+              padding: 8px 12px;
+              border-radius: 6px;
+              border: 1px solid #ddd;
+            "
+          />
+          <input
+            type="text"
+            id="filterState"
+            placeholder="Filter by state..."
+            style="
+              padding: 8px 12px;
+              border-radius: 6px;
+              border: 1px solid #ddd;
+            "
+          />
+          <select
+            id="filterStatus"
+            style="
+              padding: 8px 12px;
+              border-radius: 6px;
+              border: 1px solid #ddd;
+            "
+          >
+            <option value="">All Status</option>
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button
+            class="btn-primary"
+            onclick="loadAllStations()"
+            style="width: auto; padding: 8px 20px"
+          >
+            Apply Filters
+          </button>
+        </div>
+        <div id="allStationsList">
+          <p class="loading">Loading all stations...</p>
+        </div>
+      </div>
+
+      <!-- Users Tab -->
+      <div id="usersTab" style="display: none">
+        <h3>All Users</h3>
+        <div id="usersList">
+          <p class="loading">Loading users...</p>
+        </div>
       </div>
 
       <!-- Super Admin Section - Create New Admin -->
@@ -98,6 +187,37 @@
     <script>
       // Store the super admin email
       const SUPER_ADMIN_EMAIL = "admin@gofuel.com";
+      let currentTab = "pending";
+
+      // ===== SWITCH TABS =====
+      const switchTab = (tab) => {
+        currentTab = tab;
+
+        // Hide all tabs
+        document.getElementById("pendingTab").style.display = "none";
+        document.getElementById("allStationsTab").style.display = "none";
+        document.getElementById("usersTab").style.display = "none";
+
+        // Update button styles
+        document.getElementById("tabPending").className = "btn-secondary";
+        document.getElementById("tabAll").className = "btn-secondary";
+        document.getElementById("tabUsers").className = "btn-secondary";
+
+        // Show selected tab
+        if (tab === "pending") {
+          document.getElementById("pendingTab").style.display = "block";
+          document.getElementById("tabPending").className = "btn-primary";
+          loadPendingStations();
+        } else if (tab === "all") {
+          document.getElementById("allStationsTab").style.display = "block";
+          document.getElementById("tabAll").className = "btn-primary";
+          loadAllStations();
+        } else if (tab === "users") {
+          document.getElementById("usersTab").style.display = "block";
+          document.getElementById("tabUsers").className = "btn-primary";
+          loadUsers();
+        }
+      };
 
       // ===== LOAD PENDING STATIONS =====
       const loadPendingStations = async () => {
@@ -106,13 +226,10 @@
           '<p class="loading">Loading pending stations...</p>';
 
         try {
-          console.log("Fetching pending stations...");
           const data = await getPendingStations();
-          console.log("Pending stations data:", data);
 
           if (data.count === 0 || data.stations.length === 0) {
-            container.innerHTML =
-              "<p>No pending stations. All stations have been approved.</p>";
+            container.innerHTML = "<p>No pending stations.</p>";
             document.getElementById("pendingCount").textContent = "0";
             return;
           }
@@ -136,8 +253,56 @@
             )
             .join("");
         } catch (error) {
-          console.error("Error loading pending stations:", error);
-          container.innerHTML = `<p class="loading">Error: ${error.message}. Check console for details.</p>`;
+          container.innerHTML = `<p class="loading">Error: ${error.message}</p>`;
+        }
+      };
+
+      // ===== LOAD ALL STATIONS =====
+      const loadAllStations = async () => {
+        const container = document.getElementById("allStationsList");
+        container.innerHTML = '<p class="loading">Loading all stations...</p>';
+
+        try {
+          const city = document.getElementById("filterCity").value;
+          const state = document.getElementById("filterState").value;
+          const status = document.getElementById("filterStatus").value;
+
+          const filters = {};
+          if (city) filters.city = city;
+          if (state) filters.state = state;
+          if (status) filters.status = status;
+
+          const data = await getAllStations(filters);
+
+          if (data.count === 0) {
+            container.innerHTML = "<p>No stations found.</p>";
+            return;
+          }
+
+          // Update approved count
+          const approved = data.stations.filter(
+            (s) => s.status === "approved",
+          ).length;
+          document.getElementById("approvedCount").textContent = approved;
+
+          container.innerHTML = data.stations
+            .map(
+              (station) => `
+            <div class="station-management-card">
+                <h3>${station.name}</h3>
+                <p><strong>Owner:</strong> ${station.owner_name || "Unknown"}</p>
+                <p><strong>Address:</strong> ${station.address}, ${station.city}, ${station.state}</p>
+                <p><strong>Petrol:</strong> ${formatPrice(station.petrol_price)}</p>
+                <p><strong>Status:</strong> <span class="${station.status === "approved" ? "badge-approved" : station.status === "pending" ? "badge-pending" : "badge-rejected"}">${station.status.toUpperCase()}</span></p>
+                <div class="station-actions">
+                    <button class="btn-delete" onclick="handleAdminDeleteStation('${station.id}')">Delete</button>
+                </div>
+            </div>
+        `,
+            )
+            .join("");
+        } catch (error) {
+          container.innerHTML = `<p class="loading">Error: ${error.message}</p>`;
         }
       };
 
@@ -148,6 +313,7 @@
           await approveStation(id);
           alert("Station approved!");
           loadPendingStations();
+          loadAllStations();
         } catch (error) {
           alert("Error: " + error.message);
         }
@@ -160,6 +326,20 @@
           await rejectStation(id);
           alert("Station rejected.");
           loadPendingStations();
+          loadAllStations();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      };
+
+      // ===== HANDLE ADMIN DELETE STATION =====
+      const handleAdminDeleteStation = async (id) => {
+        if (!confirm("Permanently delete this station?")) return;
+        try {
+          await adminDeleteStation(id);
+          alert("Station deleted!");
+          loadAllStations();
+          loadPendingStations();
         } catch (error) {
           alert("Error: " + error.message);
         }
@@ -168,6 +348,7 @@
       // ===== LOAD USERS =====
       const loadUsers = async () => {
         const container = document.getElementById("usersList");
+        container.innerHTML = '<p class="loading">Loading users...</p>';
 
         try {
           const data = await getUsers();
@@ -182,7 +363,11 @@
                     <p><strong>Phone:</strong> ${user.phone || "Not provided"}</p>
                     <p><strong>Role:</strong> ${user.role}</p>
                     <p><strong>Status:</strong> ${user.is_active ? "Active" : "Inactive"}</p>
-                    ${user.is_active && user.role !== "admin" ? `<div class="station-actions"><button class="btn-delete" onclick="handleDeactivateUser('${user.id}')">Deactivate</button></div>` : ""}
+                    <div class="station-actions">
+                        ${!user.is_active ? `<button class="btn-approve" onclick="handleActivateUser('${user.id}')">Activate</button>` : ""}
+                        ${user.is_active && user.role !== "admin" ? `<button class="btn-delete" onclick="handleDeactivateUser('${user.id}')">Deactivate</button>` : ""}
+                        ${user.role !== "admin" ? `<button class="btn-delete" onclick="handleDeleteUser('${user.id}')">Delete Permanently</button>` : ""}
+                    </div>
                 </div>
             `,
             )
@@ -192,12 +377,37 @@
         }
       };
 
+      // ===== HANDLE ACTIVATE USER =====
+      const handleActivateUser = async (id) => {
+        if (!confirm("Activate this user?")) return;
+        try {
+          await activateUser(id);
+          alert("User activated!");
+          loadUsers();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      };
+
       // ===== HANDLE DEACTIVATE USER =====
       const handleDeactivateUser = async (id) => {
         if (!confirm("Deactivate this user?")) return;
         try {
           await deactivateUser(id);
           alert("User deactivated.");
+          loadUsers();
+        } catch (error) {
+          alert("Error: " + error.message);
+        }
+      };
+
+      // ===== HANDLE DELETE USER =====
+      const handleDeleteUser = async (id) => {
+        if (!confirm("Permanently delete this user? This cannot be undone."))
+          return;
+        try {
+          await deleteUser(id);
+          alert("User deleted permanently!");
           loadUsers();
         } catch (error) {
           alert("Error: " + error.message);
@@ -251,8 +461,8 @@
           document.getElementById("createAdminSection").style.display = "block";
         }
 
-        loadPendingStations();
-        loadUsers();
+        // Load default tab
+        switchTab("pending");
       });
 
       // ===== HANDLE ADMIN CREATION FORM =====

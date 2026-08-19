@@ -19,16 +19,16 @@ const createStation = async (stationData) => {
   } = stationData;
 
   const query = `
-        INSERT INTO stations (
-            owner_id, name, address, city, state, 
-            latitude, longitude, 
-            petrol_price, diesel_price, kerosene_price,
-            petrol_available, diesel_available, kerosene_available,
-            is_open, status
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
-        RETURNING *
-    `;
+    INSERT INTO stations (
+      owner_id, name, address, city, state, 
+      latitude, longitude, 
+      petrol_price, diesel_price, kerosene_price,
+      petrol_available, diesel_available, kerosene_available,
+      is_open, status
+    )
+    VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, 'pending')
+    RETURNING *
+  `;
 
   const values = [
     owner_id,
@@ -66,43 +66,43 @@ const findStationsByOwner = async (owner_id) => {
 
 const getApprovedStations = async () => {
   const query = `
-        SELECT 
-            s.*,
-            u.full_name as owner_name,
-            u.email as owner_email
-        FROM stations s
-        LEFT JOIN users u ON s.owner_id = u.id
-        WHERE s.status = 'approved'
-        ORDER BY s.created_at DESC
-    `;
+    SELECT 
+      s.*,
+      u.full_name as owner_name,
+      u.email as owner_email
+    FROM stations s
+    LEFT JOIN users u ON s.owner_id = u.id
+    WHERE s.status = 'approved'
+    ORDER BY s.created_at DESC
+  `;
   const result = await pool.query(query);
   return result.rows;
 };
 
 const getApprovedStationById = async (id) => {
   const query = `
-        SELECT 
-            s.*,
-            u.full_name as owner_name,
-            u.email as owner_email
-        FROM stations s
-        LEFT JOIN users u ON s.owner_id = u.id
-        WHERE s.id = $1 AND s.status = 'approved'
-    `;
+    SELECT 
+      s.*,
+      u.full_name as owner_name,
+      u.email as owner_email
+    FROM stations s
+    LEFT JOIN users u ON s.owner_id = u.id
+    WHERE s.id = $1 AND s.status = 'approved'
+  `;
   const result = await pool.query(query, [id]);
   return result.rows[0];
 };
 
 const getFilteredStations = async (filters) => {
   let query = `
-        SELECT 
-            s.*,
-            u.full_name as owner_name,
-            u.email as owner_email
-        FROM stations s
-        LEFT JOIN users u ON s.owner_id = u.id
-        WHERE s.status = 'approved'
-    `;
+    SELECT 
+      s.*,
+      u.full_name as owner_name,
+      u.email as owner_email
+    FROM stations s
+    LEFT JOIN users u ON s.owner_id = u.id
+    WHERE s.status = 'approved'
+  `;
 
   const values = [];
   let paramCounter = 1;
@@ -183,38 +183,35 @@ const updateStation = async (id, owner_id, updateData) => {
   values.push(owner_id);
 
   const query = `
-        UPDATE stations 
-        SET ${fields.join(", ")}
-        WHERE id = $${paramCounter} AND owner_id = $${paramCounter + 1}
-        RETURNING *
-    `;
+    UPDATE stations 
+    SET ${fields.join(", ")}
+    WHERE id = $${paramCounter} AND owner_id = $${paramCounter + 1}
+    RETURNING *
+  `;
 
   const result = await pool.query(query, values);
   return result.rows[0];
 };
 
-const updateStationStatus = async (id, owner_id, status) => {
+const updateStationStatus = async (id, status) => {
   const query = `
-    UPDATE stations
+    UPDATE stations 
     SET status = $1, updated_at = CURRENT_TIMESTAMP
-    WHERE id = $2 AND owner_id = $3 
+    WHERE id = $2
     RETURNING *
   `;
-  const result = await pool.query(query, [status, id, owner_id]);
+  const result = await pool.query(query, [status, id]);
   return result.rows[0];
 };
 
-// Delete a station (owner or admin)
 const deleteStation = async (id, owner_id, isAdmin = false) => {
   let query;
   let values;
 
   if (isAdmin) {
-    // Admin can delete any station
     query = "DELETE FROM stations WHERE id = $1 RETURNING *";
     values = [id];
   } else {
-    // Owner can delete their own station
     query = "DELETE FROM stations WHERE id = $1 AND owner_id = $2 RETURNING *";
     values = [id, owner_id];
   }
@@ -227,10 +224,10 @@ module.exports = {
   createStation,
   findStationById,
   findStationsByOwner,
-  updateStation,
-  updateStationStatus,
   getApprovedStations,
   getApprovedStationById,
   getFilteredStations,
+  updateStation,
+  updateStationStatus,
   deleteStation,
 };
