@@ -1,0 +1,24 @@
+{
+  "name": "GoFuel Finder",
+  "short_name": "GoFuel",
+  "description": "Find fuel stations near you with real-time prices and availability",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#19293c",
+  "theme_color": "#19293c",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "images/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "images/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

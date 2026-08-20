@@ -11,6 +11,15 @@
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
     />
     <link rel="stylesheet" href="css/style.css" />
+    <!-- PWA Meta Tags -->
+    <link rel="manifest" href="manifest.json" />
+    <meta name="theme-color" content="#19293c" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta
+      name="apple-mobile-web-app-status-bar-style"
+      content="black-translucent"
+    />
+    <link rel="apple-touch-icon" href="images/icon-192.png" />
   </head>
   <body>
     <nav class="navbar">
@@ -29,6 +38,22 @@
           <a href="#" id="authLink">Login</a>
         </div>
       </div>
+      <!-- Install App Button -->
+      <button
+        id="installApp"
+        style="
+          display: none;
+          background: #ec631b;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-weight: bold;
+          cursor: pointer;
+        "
+      >
+        Install App
+      </button>
     </nav>
 
     <header class="hero">
@@ -233,6 +258,49 @@
             if (e.key === "Enter") applyFilters();
           });
       });
+    </script>
+    <script>
+      // ===== PWA INSTALL BUTTON =====
+      let deferredPrompt;
+
+      // Show install button when browser supports it
+      window.addEventListener("beforeinstallprompt", (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        document.getElementById("installApp").style.display = "inline-block";
+        console.log("Install prompt ready");
+      });
+
+      // Handle install button click
+      document
+        .getElementById("installApp")
+        ?.addEventListener("click", async () => {
+          if (deferredPrompt) {
+            deferredPrompt.prompt();
+            const result = await deferredPrompt.userChoice;
+            if (result.outcome === "accepted") {
+              console.log("App installed successfully!");
+              document.getElementById("installApp").style.display = "none";
+            } else {
+              console.log("App installation declined");
+            }
+            deferredPrompt = null;
+          }
+        });
+
+      // ===== REGISTER SERVICE WORKER =====
+      if ("serviceWorker" in navigator) {
+        window.addEventListener("load", () => {
+          navigator.serviceWorker
+            .register("/sw.js")
+            .then((registration) => {
+              console.log("Service Worker registered successfully!");
+            })
+            .catch((err) => {
+              console.log("Service Worker registration failed:", err);
+            });
+        });
+      }
     </script>
   </body>
 </html>
