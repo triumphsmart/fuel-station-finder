@@ -5,6 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="images/favicon.ico" type="image/x-icon" />
     <title>GoFuel Finder - Find Fuel Near You</title>
+    <!-- Leaflet CSS -->
+    <link
+      rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
     <link rel="stylesheet" href="css/style.css" />
   </head>
   <body>
@@ -48,19 +53,186 @@
       </div>
     </header>
 
+    <!-- ===== MAP SECTION ===== -->
+    <section class="map-section">
+      <div class="container">
+        <h2>Find Stations Near You</h2>
+        <div
+          id="map"
+          style="
+            height: 450px;
+            width: 100%;
+            border-radius: 12px;
+            background: #e9ecef;
+          "
+        ></div>
+      </div>
+    </section>
+
     <section class="stations-section">
       <div class="container">
         <h2>Nearby Stations</h2>
         <div id="stationsList" class="stations-grid">
-          <!-- Stations will be loaded here by JavaScript -->
           <p>Loading stations...</p>
         </div>
       </div>
     </section>
 
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script src="js/utils.js"></script>
     <script src="js/api.js"></script>
     <script src="js/auth.js"></script>
     <script src="js/stations.js"></script>
+    <script>
+      let mapInstance = null;
+      let markersLayer = null;
+
+      // ===== INITIALIZE MAP =====
+      const initMap = () => {
+        console.log("Initializing map...");
+
+        const mapContainer = document.getElementById("map");
+        if (!mapContainer) {
+          console.error("Map container not found!");
+          return;
+        }
+
+        if (mapInstance) {
+          console.log("Map already exists");
+          return;
+        }
+
+        try {
+          mapInstance = L.map("map").setView([9.082, 8.6753], 6);
+
+          L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+            attribution:
+              '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19,
+          }).addTo(mapInstance);
+
+          console.log("Map initialized successfully!");
+
+          setTimeout(() => {
+            if (mapInstance) {
+              mapInstance.invalidateSize();
+              console.log("Map resized");
+            }
+          }, 300);
+
+          window.addEventListener("resize", () => {
+            if (mapInstance) {
+              mapInstance.invalidateSize();
+            }
+          });
+        } catch (error) {
+          console.error("Map initialization error:", error);
+        }
+      };
+
+      // ===== UPDATE MAP WITH STATIONS =====
+      const updateMap = async (filters = {}) => {
+        console.log("Updating map with filters:", filters);
+
+        try {
+          const data = await getStations(filters);
+          const stations = data.stations || [];
+          console.log("Stations to display on map:", stations.length);
+
+          if (!mapInstance) {
+            initMap();
+            await new Promise((r) => setTimeout(r, 500));
+          }
+
+          if (markersLayer) {
+            mapInstance.removeLayer(markersLayer);
+          }
+
+          markersLayer = L.layerGroup().addTo(mapInstance);
+
+          if (stations.length === 0) {
+            console.log("No stations to display");
+            return;
+          }
+
+          stations.forEach((station) => {
+            if (!station.latitude || !station.longitude) return;
+
+            const lat = parseFloat(station.latitude);
+            const lng = parseFloat(station.longitude);
+            if (isNaN(lat) || isNaN(lng)) return;
+
+            const statusText = station.is_open ? "Open" : "Closed";
+            const statusClass = station.is_open ? "open" : "closed";
+            const price = station.petrol_price
+              ? `₦${station.petrol_price}`
+              : "N/A";
+
+            const popupContent = `
+                        <div>
+                            <h4>${station.name}</h4>
+                            <p>${station.address}, ${station.city}</p>
+                            <p class="popup-price">Petrol: ${price}</p>
+                            <p><span class="popup-status ${statusClass}">${statusText}</span></p>
+                            <p><small>Updated: ${new Date(station.price_last_updated).toLocaleDateString()}</small></p>
+                            <a href="station-detail.html?id=${station.id}" style="color: #ec631b; font-weight: bold; text-decoration: none;">View Details →</a>
+                        </div>
+                    `;
+
+            const marker = L.marker([lat, lng], {
+              title: station.name,
+            });
+
+            marker.bindPopup(popupContent);
+            markersLayer.addLayer(marker);
+          });
+
+          // ===== FIX: Get bounds from markers =====
+          if (stations.length > 0) {
+            const markers = markersLayer.getLayers();
+            if (markers.length > 0) {
+              const group = L.featureGroup(markers);
+              const bounds = group.getBounds();
+              if (bounds.isValid()) {
+                mapInstance.fitBounds(bounds, { padding: [50, 50] });
+              }
+            }
+          }
+
+          setTimeout(() => {
+            if (mapInstance) {
+              mapInstance.invalidateSize();
+            }
+          }, 300);
+        } catch (error) {
+          console.error("Map update error:", error);
+        }
+      };
+
+      // ===== DOM CONTENT LOADED =====
+      document.addEventListener("DOMContentLoaded", () => {
+        console.log("DOM loaded - initializing...");
+
+        updateNav();
+        initMap();
+
+        // Load stations and update map
+        loadStations().then(() => {
+          updateMap();
+        });
+
+        // Use applyFilters from stations.js
+        document
+          .getElementById("applyFilters")
+          ?.addEventListener("click", applyFilters);
+
+        document
+          .getElementById("cityFilter")
+          ?.addEventListener("keypress", (e) => {
+            if (e.key === "Enter") applyFilters();
+          });
+      });
+    </script>
   </body>
 </html>

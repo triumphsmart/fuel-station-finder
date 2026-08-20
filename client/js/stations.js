@@ -15,14 +15,14 @@ const loadStations = async (filters = {}) => {
     container.innerHTML = data.stations
       .map(
         (station) => `
-            <div class="station-card" onclick="viewStation('${station.id}')">
-                <h3>${station.name}</h3>
-                <div class="address">${station.address}, ${station.city}</div>
-                <div class="price">${formatPrice(station.petrol_price)}</div>
-                <div class="status ${getStatusClass(station.is_open)}">${getStatusText(station.is_open)}</div>
-                <small>Updated: ${new Date(station.price_last_updated).toLocaleDateString()}</small>
-            </div>
-        `,
+    <div class="station-card" onclick="viewStation('${station.id}')">
+        <h3>${station.name}</h3>
+        <div class="address">${station.address}, ${station.city}</div>
+        <div class="price">${formatPrice(station.petrol_price)}</div>
+        <div class="status ${getStatusClass(station.is_open)}">${getStatusText(station.is_open)}</div>
+        <small>Updated: ${new Date(station.price_last_updated).toLocaleDateString()}</small>
+    </div>
+`,
       )
       .join("");
   } catch (error) {
