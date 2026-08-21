@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const API_BASE_URL = "https://gofuel-station-finder.onrender.com/api";
 
 // Helper function for API calls
 const apiRequest = async (
